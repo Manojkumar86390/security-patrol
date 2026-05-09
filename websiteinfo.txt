@@ -1,0 +1,292 @@
+================================================================================
+         SMART SECURITY PATROL MONITORING SYSTEM — PROJECT SPECIFICATION
+================================================================================
+
+PROJECT NAME:
+  Smart Security Patrol Monitoring System
+
+PROJECT TYPE:
+  IoT + BLE + ESP32 Based Security Tracking Website
+
+PURPOSE:
+  This website monitors security guard patrol activity using BLE (Bluetooth Low
+  Energy) technology and ESP32 microcontroller devices. The system records guard
+  checkpoint visits, timestamps, and device status in real time, providing
+  security administrators and supervisors with full visibility over patrol
+  operations across their facility.
+
+--------------------------------------------------------------------------------
+TARGET USERS
+--------------------------------------------------------------------------------
+  - Security Admins
+  - Security Supervisors
+  - Institution Management
+
+--------------------------------------------------------------------------------
+BRAND STYLE
+--------------------------------------------------------------------------------
+  Style         : Professional, Modern Dashboard
+  Theme         : Dark Sidebar, Clean UI, Real-time Monitoring Feel
+  Color Palette :
+    - Primary     : Dark Blue (#0a0d14, #0f1320)
+    - Accent      : Bright Blue (#2b7fff)
+    - Background  : Black / Very Dark (#080b10)
+    - Surface     : Dark Card (#111827)
+    - Text        : White / Light Gray
+    - Status Good : Green (#10d47e)
+    - Status Warn : Amber (#f59e0b)
+    - Status Bad  : Red (#ef4444)
+  Typography    : Space Grotesk (headings), JetBrains Mono (IDs/codes)
+
+--------------------------------------------------------------------------------
+MAIN FEATURES
+--------------------------------------------------------------------------------
+
+1. LOGIN SYSTEM
+   - Admin login page
+   - Secure authentication (username + password)
+   - Session management
+   - Redirect to dashboard after login
+
+2. DASHBOARD
+   Summary Cards:
+     - Total Guards registered
+     - Active Patrols (currently on duty)
+     - Online ESP Devices (device count live)
+     - Missed Checkpoints (today's count)
+   Sections:
+     - Recent Patrol Activity table
+     - Live status indicators (green/red)
+     - Real-time auto-refresh every 30 seconds
+
+3. PATROL LOGS
+   Table Columns:
+     - Guard ID
+     - Guard Name
+     - Checkpoint Location
+     - Date (YYYY-MM-DD)
+     - Time (HH:MM:SS)
+     - BLE Device ID
+     - Status (Verified / Missed / Late)
+   Features:
+     - Search by Guard ID, Name, or Location
+     - Filter by Date range
+     - Pagination
+     - Color-coded status badges
+
+4. LIVE MONITORING
+   - Real-time guard detection display
+   - Each ESP32 device shown as a card
+   - Device online / offline status indicator
+   - Last detected guard name and time
+   - Auto-refresh every 10–15 seconds
+   - Visual pulse animation for active devices
+
+5. DEVICE MANAGEMENT
+   - List of all registered ESP32 devices
+   - Device ID, Checkpoint Name, Location, Status
+   - Add / Edit / Delete devices
+   - Toggle device active/inactive
+   - Last heartbeat timestamp
+
+6. REPORTS SECTION
+   Export Options:
+     - Export as CSV
+     - Export as Excel (.xlsx)
+   Report Types:
+     - Daily Report (single day summary)
+     - Weekly Report (7-day patrol summary)
+   Filters:
+     - Select Guard
+     - Select Date / Date Range
+     - Select Checkpoint
+
+7. SETTINGS
+   Sub-sections:
+     a) Add / Manage Guards
+        - Guard ID, Name, Shift, Contact
+     b) Register BLE Devices
+        - ESP32 Device ID, MAC Address, Assigned Checkpoint
+     c) Configure Checkpoints
+        - Checkpoint Name, Location Description, Assigned Device
+     d) System Settings
+        - Patrol schedule timing
+        - Alert thresholds (missed checkpoint tolerance)
+
+--------------------------------------------------------------------------------
+BACKEND REQUIREMENTS
+--------------------------------------------------------------------------------
+
+  Language      : PHP (recommended) or Python (Flask/Django)
+  Architecture  : REST API
+  Database      : MySQL
+
+  Database Tables (suggested):
+    - guards         (id, name, guard_code, shift, contact, status)
+    - devices        (id, device_id, mac_address, checkpoint_name, location, status)
+    - patrol_logs    (id, guard_id, device_id, checkpoint, scan_time, date, status)
+    - checkpoints    (id, name, location, assigned_device_id)
+    - users          (id, username, password_hash, role)
+
+  API Endpoints:
+    POST   /api/save_patrol      — ESP32 sends patrol check-in data
+    GET    /api/get_logs         — Fetch patrol log records
+    GET    /api/device_status    — Get online/offline status of ESP32 devices
+    GET    /api/dashboard_stats  — Summary counts for dashboard cards
+    POST   /api/add_guard        — Register a new guard
+    POST   /api/add_device       — Register a new ESP32 device
+    POST   /api/login            — Admin authentication
+    GET    /api/reports/daily    — Daily patrol report data
+    GET    /api/reports/weekly   — Weekly patrol report data
+
+--------------------------------------------------------------------------------
+HARDWARE INTEGRATION
+--------------------------------------------------------------------------------
+
+  Device      : ESP32 Microcontroller
+  Protocol    : BLE (Bluetooth Low Energy) for guard detection
+  Connection  : ESP32 connects to WiFi and sends HTTP POST to backend API
+  Trigger     : When a guard's BLE tag/wristband is detected at checkpoint
+
+  ESP32 Flow:
+    1. ESP32 scans for BLE signals
+    2. Detects guard BLE device in range
+    3. Sends POST request to /api/save_patrol with:
+       { "device_id": "ESP-001", "guard_id": "G-003", "timestamp": "2025-05-07 14:32:10" }
+    4. Backend saves record to MySQL database
+    5. Dashboard updates on next refresh
+
+  Sample ESP32 Arduino Payload (JSON):
+    {
+      "device_id"  : "ESP-001",
+      "guard_id"   : "GRD-007",
+      "checkpoint" : "Gate A",
+      "timestamp"  : "2025-05-07T14:32:10Z",
+      "rssi"       : -67
+    }
+
+--------------------------------------------------------------------------------
+NAVIGATION MENU
+--------------------------------------------------------------------------------
+
+  Sidebar Items (in order):
+    [1] Dashboard
+    [2] Patrol Logs
+    [3] Live Status
+    [4] Devices
+    [5] Reports
+    [6] Settings
+    [ ] Logout (footer)
+
+--------------------------------------------------------------------------------
+PAGE LAYOUTS
+--------------------------------------------------------------------------------
+
+  LOGIN PAGE:
+    - Centered card on dark background
+    - Logo + System Name
+    - Username & Password fields
+    - Login button
+    - "Secure Admin Portal" label
+
+  DASHBOARD PAGE:
+    - Top navbar (page title + live badge + admin info)
+    - Left sidebar (dark, with nav icons)
+    - 4 Summary metric cards (row)
+    - Recent Patrol Activity table
+    - Live device status strip
+
+  ALL DATA PAGES (Logs, Devices, Reports):
+    - Top search/filter bar
+    - Responsive data table
+    - Pagination controls
+    - Export buttons (CSV / Excel)
+
+--------------------------------------------------------------------------------
+TABLE FEATURES
+--------------------------------------------------------------------------------
+
+  - Responsive (horizontal scroll on small screens)
+  - Search input (filters rows in real time)
+  - Date range filter (from / to date pickers)
+  - Column sorting (ascending / descending)
+  - Row color-coding by status
+  - Pagination (10 / 25 / 50 rows per page)
+
+--------------------------------------------------------------------------------
+EXTRA FEATURES
+--------------------------------------------------------------------------------
+
+  - Fully responsive design (mobile + tablet + desktop)
+  - Real-time data refresh (polling or WebSocket)
+  - Professional admin dashboard UI
+  - Animated live status indicators (pulsing green dot)
+  - Toast notifications for new patrol events
+  - Dark mode UI (default)
+  - Session timeout / auto logout for security
+
+--------------------------------------------------------------------------------
+FUTURE SCOPE (Phase 2+)
+--------------------------------------------------------------------------------
+
+  - GPS Tracking integration (map view of guard locations)
+  - Telegram Bot Alerts (missed checkpoint notifications)
+  - RFID Integration (alternative to BLE)
+  - AI Analytics (patrol pattern analysis, anomaly detection)
+  - Cloud Hosting (AWS / Azure / Google Cloud)
+  - Mobile App for guards (Flutter / React Native)
+  - WhatsApp alert integration
+
+--------------------------------------------------------------------------------
+TECH STACK RECOMMENDATION
+--------------------------------------------------------------------------------
+
+  Frontend  : HTML5 + CSS3 + JavaScript (Vanilla or Alpine.js)
+              OR React.js for SPA experience
+  Backend   : PHP 8+ with PDO  OR  Python Flask/FastAPI
+  Database  : MySQL 8.0+
+  Auth      : PHP Sessions or JWT Tokens
+  Export    : PHPSpreadsheet (Excel) / fputcsv (CSV)
+              OR Python openpyxl / csv module
+  Hosting   : Apache/Nginx on Linux VPS or shared hosting
+  ESP32     : Arduino IDE with WiFi + BLE libraries
+              HTTPClient library for API calls
+
+--------------------------------------------------------------------------------
+FOLDER STRUCTURE (suggested)
+--------------------------------------------------------------------------------
+
+  /project-root
+  ├── index.php              (login page)
+  ├── dashboard.php
+  ├── patrol-logs.php
+  ├── live-status.php
+  ├── devices.php
+  ├── reports.php
+  ├── settings.php
+  ├── logout.php
+  ├── /api
+  │   ├── save_patrol.php
+  │   ├── get_logs.php
+  │   ├── device_status.php
+  │   ├── dashboard_stats.php
+  │   └── login.php
+  ├── /assets
+  │   ├── /css
+  │   │   └── style.css
+  │   ├── /js
+  │   │   └── main.js
+  │   └── /img
+  │       └── logo.png
+  ├── /includes
+  │   ├── db.php             (MySQL connection)
+  │   ├── auth.php           (session check)
+  │   ├── header.php
+  │   └── sidebar.php
+  ├── /esp32
+  │   └── patrol_scanner.ino (ESP32 Arduino sketch)
+  └── README.md
+
+================================================================================
+END OF SPECIFICATION — Smart Security Patrol Monitoring System
+================================================================================
