@@ -50,19 +50,18 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<PatrolLog[]>([]);
 
   // LIVE CLOCK
-  useEffect(() => {
-    const updateTime = () => {
-      setCurrentTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
+useEffect(() => {
+  const updateTime = () => {
+    setCurrentTime(
+      new Date().toLocaleTimeString('en-US', { hour12: false })
+    );
+  };
 
-  // FETCH DATA FROM SUPABASE
-  useEffect(() => {
-    loadData();
-  }, []);
+  updateTime();
+  const interval = setInterval(updateTime, 1000);
+
+  return () => clearInterval(interval);
+}, []);
 
   async function loadData() {
     const { data } = await getPatrols();
