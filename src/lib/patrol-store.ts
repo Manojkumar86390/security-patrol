@@ -8,6 +8,28 @@ const MAX_EVENTS = 300;
 
 let chain: Promise<void> = Promise.resolve();
 
+function toIstDateTimeParts(d: Date): { date: string; time: string } {
+  // Store date/time in IST for UI + Google Sheets readability.
+  // receivedAt remains ISO (UTC) for a stable absolute timestamp.
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+
+  const date = `${pick('year')}-${pick('month')}-${pick('day')}`;
+  const time = `${pick('hour')}:${pick('minute')}:${pick('second')}`;
+  return { date, time };
+}
+
 function normalizeMac(mac: string): string {
   return mac.trim().replace(/-/g, ':').toLowerCase();
 }
@@ -39,8 +61,7 @@ export async function appendPatrolEvent(payload: PatrolEventPayload): Promise<Pa
     throw new Error('Invalid detectedAt');
   }
 
-  const date = detected.toISOString().slice(0, 10);
-  const time = detected.toISOString().slice(11, 19);
+  const { date, time } = toIstDateTimeParts(detected);
   const status: PatrolStatus = payload.status ?? 'Verified';
 
   const event: PatrolEvent = {

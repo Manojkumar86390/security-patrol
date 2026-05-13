@@ -1,10 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import SectionWithMockup from "@/components/blocks/section-with-mockup";
 import { FileSpreadsheet, Download, Activity, ShieldCheck } from "lucide-react";
+import { usePatrolEvents } from '@/hooks/use-patrol-events';
+import {
+  computeZoneScansFromLogs,
+  DEMO_PATROL_TABLE,
+  resolveZoneRowsForDisplay,
+} from '@/lib/patrol-stats';
 
 export default function HowItWorksSection() {
+  const { events: live } = usePatrolEvents({ limit: 150, intervalMs: 4000 });
+
+  const zoneRows = useMemo(() => {
+    if (live.length > 0) {
+      const fromLive = resolveZoneRowsForDisplay(live);
+      if (fromLive.length > 0) return fromLive;
+    }
+    return computeZoneScansFromLogs(
+      DEMO_PATROL_TABLE.map((r) => ({ checkpoint: r.checkpoint, status: r.status }))
+    );
+  }, [live]);
+
+  const zoneSubtitle =
+    live.length > 0 ? 'From your live patrol feed (last 60 min when available)' : 'From demo patrol activity';
+
   return (
     <section id="how-it-works">
       <SectionWithMockup
@@ -29,15 +50,12 @@ export default function HowItWorksSection() {
               <div>
                 <p className="text-xs text-[#8ea1b5]">Live Patrol Monitoring</p>
                 <p className="text-sm font-semibold text-white">Zone Activity (Last 60 Min)</p>
+                <p className="mt-0.5 text-[10px] text-neutral-500">{zoneSubtitle}</p>
               </div>
               <span className="rounded-full bg-[#10d47e]/10 px-2 py-1 text-[10px] font-medium text-[#10d47e]">Live</span>
             </div>
             <div className="mt-4 space-y-3">
-              {[
-                { zone: "Main Gate", checkIns: 18, status: "On Track" },
-                { zone: "Server Wing", checkIns: 13, status: "Late Alert" },
-                { zone: "Warehouse", checkIns: 16, status: "On Track" },
-              ].map((item) => (
+              {zoneRows.map((item) => (
                 <div key={item.zone} className="rounded-xl border border-white/5 bg-black/30 p-3">
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-medium text-white">{item.zone}</p>

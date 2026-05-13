@@ -1,5 +1,5 @@
 /**
- * ESP32 — send patrol check-in to your PC running Next.js (then Sheet via Apps Script).
+ * ESP32 - send patrol check-in to your PC running Next.js (then Sheet via Apps Script).
  *
  * SETUP
  * 1) On your PC: copy .env.example → .env.local, set PATROL_INGEST_SECRET and
@@ -101,7 +101,7 @@ void setup() {
     sendPatrolPing();
     lastSend = millis();
   } else {
-    Serial.println("WiFi failed — check SSID/password and 2.4 GHz network.");
+    Serial.println("WiFi failed - check SSID/password and 2.4 GHz network.");
   }
 }
 

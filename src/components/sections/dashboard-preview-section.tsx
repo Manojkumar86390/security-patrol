@@ -3,6 +3,11 @@
 import React, { useMemo } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { usePatrolEvents } from '@/hooks/use-patrol-events';
+import {
+  computeDashboardStats,
+  computeDashboardStatsFromDemoLogs,
+  DEMO_PATROL_TABLE,
+} from '@/lib/patrol-stats';
 
 interface PatrolLog {
   id: string;
@@ -16,14 +21,7 @@ interface PatrolLog {
   bluetoothMac?: string;
 }
 
-const sampleLogs: PatrolLog[] = [
-  { id: '1', guardName: 'Ahmed Khan', guardId: 'GRD-001', checkpoint: 'Main Gate', date: '2025-05-07', time: '14:32:10', deviceId: 'ESP-001', status: 'Verified' },
-  { id: '2', guardName: 'Rajesh Kumar', guardId: 'GRD-002', checkpoint: 'Building B - Floor 2', date: '2025-05-07', time: '14:28:45', deviceId: 'ESP-003', status: 'Verified' },
-  { id: '3', guardName: 'Suresh Patel', guardId: 'GRD-003', checkpoint: 'Parking Lot A', date: '2025-05-07', time: '14:15:00', deviceId: 'ESP-007', status: 'Late' },
-  { id: '4', guardName: 'Michael Chen', guardId: 'GRD-004', checkpoint: 'Server Room', date: '2025-05-07', time: '13:50:30', deviceId: 'ESP-002', status: 'Verified' },
-  { id: '5', guardName: 'David Wilson', guardId: 'GRD-005', checkpoint: 'Emergency Exit C', date: '2025-05-07', time: '13:45:22', deviceId: 'ESP-005', status: 'Missed' },
-  { id: '6', guardName: 'Ahmed Khan', guardId: 'GRD-001', checkpoint: 'Warehouse', date: '2025-05-07', time: '13:30:15', deviceId: 'ESP-008', status: 'Verified' },
-];
+const sampleLogs: PatrolLog[] = DEMO_PATROL_TABLE;
 
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
   Verified: { bg: 'bg-[#10d47e]/10', text: 'text-[#10d47e]', border: 'border-[#10d47e]/30' },
@@ -46,7 +44,7 @@ const rowVariants: Variants = {
 const gridCols = 'minmax(120px,1.1fr) minmax(130px,1fr) 88px minmax(100px,1fr) 92px 80px 88px 88px';
 
 export default function DashboardPreviewSection() {
-  const { events: live, loading } = usePatrolEvents({ limit: 30, intervalMs: 2500 });
+  const { events: live, loading } = usePatrolEvents({ limit: 100, intervalMs: 2500 });
 
   const displayLogs: PatrolLog[] = useMemo(() => {
     if (live.length === 0) return sampleLogs;
@@ -64,6 +62,33 @@ export default function DashboardPreviewSection() {
   }, [live]);
 
   const liveFeed = live.length > 0;
+
+  const summaryCards = useMemo(() => {
+    if (live.length > 0) {
+      const s = computeDashboardStats(live);
+      return [
+        { label: 'Total Guards', value: String(s.totalGuards), color: 'from-[#2b7fff] to-[#0055dd]' },
+        { label: 'Active Patrols', value: String(s.activePatrols), color: 'from-[#10d47e] to-[#059669]' },
+        { label: 'Online Devices', value: String(s.onlineDevices), color: 'from-[#a855f7] to-[#7c3aed]' },
+        { label: 'Missed Today', value: String(s.missedToday), color: 'from-[#ef4444] to-[#dc2626]' },
+      ];
+    }
+    const s = computeDashboardStatsFromDemoLogs(
+      DEMO_PATROL_TABLE.map((r) => ({
+        guardId: r.guardId,
+        bluetoothMac: r.bluetoothMac,
+        status: r.status,
+        date: r.date,
+        deviceId: r.deviceId,
+      }))
+    );
+    return [
+      { label: 'Total Guards', value: String(s.totalGuards), color: 'from-[#2b7fff] to-[#0055dd]' },
+      { label: 'Active Patrols', value: String(s.activePatrols), color: 'from-[#10d47e] to-[#059669]' },
+      { label: 'Online Devices', value: String(s.onlineDevices), color: 'from-[#a855f7] to-[#7c3aed]' },
+      { label: 'Missed Today', value: String(s.missedToday), color: 'from-[#ef4444] to-[#dc2626]' },
+    ];
+  }, [live]);
 
   return (
     <section id="dashboard" className="relative py-32 bg-black overflow-hidden">
@@ -88,14 +113,9 @@ export default function DashboardPreviewSection() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Total Guards', value: '24', color: 'from-[#2b7fff] to-[#0055dd]' },
-            { label: 'Active Patrols', value: '8', color: 'from-[#10d47e] to-[#059669]' },
-            { label: 'Online Devices', value: '18', color: 'from-[#a855f7] to-[#7c3aed]' },
-            { label: 'Missed Today', value: '3', color: 'from-[#ef4444] to-[#dc2626]' },
-          ].map((card, i) => (
+          {summaryCards.map((card, i) => (
             <motion.div
-              key={i}
+              key={card.label}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
