@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { usePatrolEvents } from '@/hooks/use-patrol-events';
 import {
   Shield, LayoutDashboard, FileText, Radio, Cpu, BarChart3,
   Settings, LogOut, Users, Activity, Wifi, AlertTriangle,
@@ -14,8 +15,10 @@ interface PatrolLog {
   guardName: string;
   guardId: string;
   checkpoint: string;
+  date: string;
   time: string;
   deviceId: string;
+  bluetoothMac: string;
   status: 'Verified' | 'Missed' | 'Late';
 }
 
@@ -37,14 +40,6 @@ const sidebarItems = [
   { icon: Settings, label: 'Settings', active: false },
 ];
 
-const patrolLogs: PatrolLog[] = [
-  { id: '1', guardName: 'Ahmed Khan', guardId: 'GRD-001', checkpoint: 'Main Gate', time: '14:32:10', deviceId: 'ESP-001', status: 'Verified' },
-  { id: '2', guardName: 'Rajesh Kumar', guardId: 'GRD-002', checkpoint: 'Building B', time: '14:28:45', deviceId: 'ESP-003', status: 'Verified' },
-  { id: '3', guardName: 'Suresh Patel', guardId: 'GRD-003', checkpoint: 'Parking A', time: '14:15:00', deviceId: 'ESP-007', status: 'Late' },
-  { id: '4', guardName: 'Michael Chen', guardId: 'GRD-004', checkpoint: 'Server Room', time: '13:50:30', deviceId: 'ESP-002', status: 'Verified' },
-  { id: '5', guardName: 'David Wilson', guardId: 'GRD-005', checkpoint: 'Exit C', time: '13:45:22', deviceId: 'ESP-005', status: 'Missed' },
-];
-
 const devices: DeviceStatus[] = [
   { id: 'ESP-001', name: 'Checkpoint Alpha', checkpoint: 'Main Gate', status: 'online', lastGuard: 'Ahmed Khan', lastSeen: '2 min ago' },
   { id: 'ESP-002', name: 'Checkpoint Beta', checkpoint: 'Server Room', status: 'online', lastGuard: 'Michael Chen', lastSeen: '5 min ago' },
@@ -63,6 +58,26 @@ const statusColors: Record<string, { bg: string; text: string; border: string }>
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+  const { events: livePatrol, error: patrolError, loading: patrolLoading } = usePatrolEvents({
+    limit: 50,
+    intervalMs: 2500,
+  });
+
+  const patrolLogs: PatrolLog[] = useMemo(
+    () =>
+      livePatrol.map((e) => ({
+        id: e.id,
+        guardName: e.name,
+        guardId: e.guardId,
+        checkpoint: e.location,
+        date: e.date,
+        time: e.time,
+        deviceId: e.espId,
+        bluetoothMac: e.bluetoothMac,
+        status: e.status,
+      })),
+    [livePatrol]
+  );
 
   useEffect(() => {
     const updateTime = () => {
@@ -190,8 +205,17 @@ export default function DashboardPage() {
 
           {/* Patrol Activity Table */}
           <div className="rounded-2xl border border-white/5 bg-[#111827]/30 overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-              <h3 className="text-white font-semibold">Recent Patrol Activity</h3>
+            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="text-white font-semibold">Recent Patrol Activity</h3>
+                <p className="text-neutral-500 text-xs mt-1">
+                  {patrolLoading
+                    ? 'Loading scans…'
+                    : patrolError
+                      ? `Feed issue: ${patrolError}`
+                      : `${patrolLogs.length} event(s) from ESP32 / Bluetooth`}
+                </p>
+              </div>
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111827] border border-white/5">
                   <Search className="w-4 h-4 text-neutral-500" />
@@ -201,32 +225,46 @@ export default function DashboardPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px]">
+              <table className="w-full min-w-[900px]">
                 <thead>
                   <tr className="border-b border-white/5">
-                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Guard</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">ID</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Checkpoint</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Name</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Bluetooth MAC</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Guard ID</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Location</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Date</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Time</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Device</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">ESP32</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {patrolLogs.map((log) => (
-                    <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-white text-sm font-medium">{log.guardName}</td>
-                      <td className="px-6 py-4 text-neutral-400 text-sm font-mono">{log.guardId}</td>
-                      <td className="px-6 py-4 text-neutral-300 text-sm">{log.checkpoint}</td>
-                      <td className="px-6 py-4 text-neutral-400 text-sm font-mono">{log.time}</td>
-                      <td className="px-6 py-4 text-neutral-400 text-sm font-mono">{log.deviceId}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[log.status].bg} ${statusColors[log.status].text} ${statusColors[log.status].border}`}>
-                          {log.status}
-                        </span>
+                  {patrolLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-10 text-center text-neutral-500 text-sm">
+                        No patrol scans yet. When your ESP32 posts to{' '}
+                        <code className="text-neutral-400">/api/patrol-scan</code>, rows appear here automatically
+                        (page refreshes every few seconds).
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    patrolLogs.map((log) => (
+                      <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                        <td className="px-6 py-4 text-white text-sm font-medium">{log.guardName}</td>
+                        <td className="px-6 py-4 text-neutral-400 text-sm font-mono whitespace-nowrap">{log.bluetoothMac}</td>
+                        <td className="px-6 py-4 text-neutral-400 text-sm font-mono">{log.guardId}</td>
+                        <td className="px-6 py-4 text-neutral-300 text-sm">{log.checkpoint}</td>
+                        <td className="px-6 py-4 text-neutral-400 text-sm whitespace-nowrap">{log.date}</td>
+                        <td className="px-6 py-4 text-neutral-400 text-sm font-mono whitespace-nowrap">{log.time}</td>
+                        <td className="px-6 py-4 text-neutral-400 text-sm font-mono">{log.deviceId}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[log.status].bg} ${statusColors[log.status].text} ${statusColors[log.status].border}`}>
+                            {log.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

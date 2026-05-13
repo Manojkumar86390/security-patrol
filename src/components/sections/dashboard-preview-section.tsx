@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, type Variants } from 'framer-motion';
+import { usePatrolEvents } from '@/hooks/use-patrol-events';
 
 interface PatrolLog {
   id: string;
@@ -12,6 +13,7 @@ interface PatrolLog {
   time: string;
   deviceId: string;
   status: 'Verified' | 'Missed' | 'Late';
+  bluetoothMac?: string;
 }
 
 const sampleLogs: PatrolLog[] = [
@@ -41,7 +43,28 @@ const rowVariants: Variants = {
   },
 };
 
+const gridCols = 'minmax(120px,1.1fr) minmax(130px,1fr) 88px minmax(100px,1fr) 92px 80px 88px 88px';
+
 export default function DashboardPreviewSection() {
+  const { events: live, loading } = usePatrolEvents({ limit: 30, intervalMs: 2500 });
+
+  const displayLogs: PatrolLog[] = useMemo(() => {
+    if (live.length === 0) return sampleLogs;
+    return live.map((e) => ({
+      id: e.id,
+      guardName: e.name,
+      guardId: e.guardId,
+      checkpoint: e.location,
+      date: e.date,
+      time: e.time,
+      deviceId: e.espId,
+      status: e.status,
+      bluetoothMac: e.bluetoothMac,
+    }));
+  }, [live]);
+
+  const liveFeed = live.length > 0;
+
   return (
     <section id="dashboard" className="relative py-32 bg-black overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(43,127,255,0.05),transparent_60%)]" />
@@ -93,46 +116,60 @@ export default function DashboardPreviewSection() {
             <h3 className="text-white font-semibold">Recent Patrol Activity</h3>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10d47e] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10d47e]"></span>
+                <span
+                  className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    liveFeed ? 'animate-ping bg-[#10d47e]' : 'bg-transparent'
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    liveFeed ? 'bg-[#10d47e]' : loading ? 'bg-[#f59e0b]' : 'bg-neutral-600'
+                  }`}
+                />
               </span>
-              <span className="text-xs text-neutral-400">Live</span>
+              <span className="text-xs text-neutral-400">
+                {liveFeed ? 'Live feed' : loading ? 'Connecting…' : 'Demo data'}
+              </span>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[900px]">
+            <div className="min-w-[1024px]">
               {/* Header */}
               <div
                 className="px-6 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide border-b border-white/5"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '180px 100px 180px 120px 100px 100px 100px',
+                  gridTemplateColumns: gridCols,
                   columnGap: '8px'
                 }}
               >
-                <div>Guard</div>
+                <div>Name</div>
+                <div>Bluetooth MAC</div>
                 <div>Guard ID</div>
-                <div>Checkpoint</div>
+                <div>Location</div>
                 <div>Date</div>
                 <div>Time</div>
-                <div>Device</div>
+                <div>ESP32</div>
                 <div>Status</div>
               </div>
 
               {/* Rows */}
               <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-                {sampleLogs.map((log) => (
+                {displayLogs.map((log) => (
                   <motion.div key={log.id} variants={rowVariants}>
                     <div
                       className="px-6 py-4 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] last:border-0"
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '180px 100px 180px 120px 100px 100px 100px',
+                        gridTemplateColumns: gridCols,
                         columnGap: '8px'
                       }}
                     >
                       <div className="text-white font-medium text-sm">{log.guardName}</div>
+                      <div className="text-neutral-400 text-sm font-mono truncate" title={log.bluetoothMac}>
+                        {log.bluetoothMac ?? '—'}
+                      </div>
                       <div className="text-neutral-400 text-sm font-mono">{log.guardId}</div>
                       <div className="text-neutral-300 text-sm">{log.checkpoint}</div>
                       <div className="text-neutral-400 text-sm">{log.date}</div>
