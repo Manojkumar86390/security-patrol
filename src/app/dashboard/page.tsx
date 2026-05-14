@@ -5,9 +5,18 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePatrolEvents } from '@/hooks/use-patrol-events';
 import {
+  downloadDailyPatrolCsv,
+  downloadMissedPatrolCsv,
+  downloadWeeklyPatrolCsv,
+} from "@/lib/patrolCsvExport";
+import {
   Shield, LayoutDashboard, FileText, Radio, Cpu, BarChart3,
   Settings, LogOut, Users, Activity, Wifi, AlertTriangle,
+
   Search, Bell, ChevronDown, Menu, X
+
+  Search, Bell, Menu, Download, Loader2
+ fcfde94 (update website)
 } from 'lucide-react';
 
 interface PatrolLog {
@@ -58,6 +67,7 @@ const statusColors: Record<string, { bg: string; text: string; border: string }>
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+<<<<<<< HEAD
   const { events: livePatrol, error: patrolError, loading: patrolLoading } = usePatrolEvents({
     limit: 50,
     intervalMs: 2500,
@@ -87,6 +97,63 @@ export default function DashboardPage() {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+=======
+  const [logs, setLogs] = useState<PatrolLog[]>([]);
+  const [csvLoading, setCsvLoading] = useState<null | 'daily' | 'weekly' | 'missed'>(null);
+
+  // LIVE CLOCK
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(
+        new Date().toLocaleTimeString('en-US', { hour12: false })
+      );
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  async function loadData() {
+    const { data } = await getPatrols();
+
+    if (data) {
+      const formatted: PatrolLog[] = data.map((item: any) => ({
+        id: item.id,
+        guardName: item.guard_name,
+        guardId: item.guard_name,
+        checkpoint: item.checkpoint_id,
+        time: new Date(item.created_at).toLocaleTimeString(),
+        deviceId: item.checkpoint_id,
+        status: 'Verified' // temporary since DB has no status column
+      }));
+
+      setLogs(formatted);
+    }
+  }
+>>>>>>> fcfde94 (update website)
+
+  async function handlePatrolCsv(kind: 'daily' | 'weekly' | 'missed') {
+    setCsvLoading(kind);
+    try {
+      const res =
+        kind === 'daily'
+          ? await downloadDailyPatrolCsv()
+          : kind === 'weekly'
+            ? await downloadWeeklyPatrolCsv()
+            : await downloadMissedPatrolCsv();
+      if (!res.ok) {
+        window.alert(res.error ?? 'CSV export failed.');
+      }
+    } finally {
+      setCsvLoading(null);
+    }
+  }
 
   const summaryCards = [
     { label: 'Total Guards', value: '24', icon: Users, color: 'from-[#2b7fff] to-[#0055dd]', change: '+2' },
@@ -203,6 +270,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
+<<<<<<< HEAD
           {/* Patrol Activity Table */}
           <div className="rounded-2xl border border-white/5 bg-[#111827]/30 overflow-hidden">
             <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between flex-wrap gap-3">
@@ -221,6 +289,35 @@ export default function DashboardPage() {
                   <Search className="w-4 h-4 text-neutral-500" />
                   <input type="text" placeholder="Search..." className="bg-transparent text-sm text-white outline-none w-32 placeholder:text-neutral-600" />
                 </div>
+=======
+          {/* TABLE */}
+          <div className="bg-[#111827]/30 rounded-xl border border-white/5 overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-white font-semibold">Patrol Logs</div>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { kind: 'daily' as const, label: 'Daily CSV' },
+                    { kind: 'weekly' as const, label: 'Weekly CSV' },
+                    { kind: 'missed' as const, label: 'Missed CSV' },
+                  ] as const
+                ).map(({ kind, label }) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    disabled={csvLoading !== null}
+                    onClick={() => void handlePatrolCsv(kind)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#111827] px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors hover:border-[#2b7fff]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {csvLoading === kind ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {csvLoading === kind ? '…' : label}
+                  </button>
+                ))}
+>>>>>>> fcfde94 (update website)
               </div>
             </div>
 

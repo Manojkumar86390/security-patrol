@@ -73,12 +73,12 @@ const SectionWithMockup: React.FC<SectionWithMockupProps> = ({
 
                     {/* App mockup/Image Content */}
                     <motion.div
-                        className={`relative mt-10 md:mt-0 mx-auto ${imageOrderClass} w-full max-w-[300px] md:max-w-[471px]`}
+                        className={`relative isolate mt-10 md:mt-0 mx-auto ${imageOrderClass} w-full max-w-[300px] md:max-w-[471px]`}
                         variants={itemVariants}
                     >
-                        {/* Decorative Background Element */}
+                        {/* Decorative layer: must not capture clicks (would block primary mockup). */}
                         <motion.div
-                             className={`absolute w-[300px] h-[317px] md:w-[472px] md:h-[500px] bg-[#090909] rounded-[32px] z-0`}
+                             className={`pointer-events-none absolute w-[300px] h-[317px] md:w-[472px] md:h-[500px] bg-[#090909] rounded-[32px] z-0`}
                              style={{
                                 top: reverseLayout ? 'auto' : '10%',
                                 bottom: reverseLayout ? '10%' : 'auto',
@@ -108,21 +108,21 @@ const SectionWithMockup: React.FC<SectionWithMockupProps> = ({
 
                         {/* Main Mockup Card */}
                         <motion.div
-                            className="relative w-full h-[405px] md:h-[637px] bg-[#ffffff0a] rounded-[32px] backdrop-blur-[15px] backdrop-brightness-[100%] border-0 z-10 overflow-hidden"
+                            className="relative z-10 w-full h-[405px] md:h-[637px] bg-[#ffffff0a] rounded-[32px] backdrop-blur-[15px] backdrop-brightness-[100%] border-0 overflow-hidden pointer-events-auto"
                             initial={{ y: reverseLayout ? 0 : 0 }}
                             whileInView={{ y: reverseLayout ? 20 : 30 }}
                              transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
                              viewport={{ once: true, amount: 0.5 }}
                         >
-                            <div className="p-0 h-full">
+                            <div className="p-0 h-full min-h-0">
                                 <div
-                                    className="h-full relative"
+                                    className="relative h-full min-h-0 overflow-y-auto overscroll-contain"
                                     style={{
                                         backgroundSize: "100% 100%",
                                     }}
                                 >
                                     {primaryContent ? (
-                                        <div className="w-full h-full p-4 md:p-6">
+                                        <div className="relative z-10 min-h-0 w-full p-4 md:p-6">
                                             {primaryContent}
                                         </div>
                                     ) : (

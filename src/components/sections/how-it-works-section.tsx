@@ -1,5 +1,6 @@
 'use client';
 
+ HEAD
 import React, { useMemo } from 'react';
 import SectionWithMockup from "@/components/blocks/section-with-mockup";
 import { FileSpreadsheet, Download, Activity, ShieldCheck } from "lucide-react";
@@ -25,6 +26,56 @@ export default function HowItWorksSection() {
 
   const zoneSubtitle =
     live.length > 0 ? 'From your live patrol feed (last 60 min when available)' : 'From demo patrol activity';
+
+import React, { useState } from 'react';
+import SectionWithMockup from "@/components/blocks/section-with-mockup";
+import { FileSpreadsheet, Download, Activity, ShieldCheck, Loader2 } from "lucide-react";
+import {
+  downloadDailyPatrolCsv,
+  downloadMissedPatrolCsv,
+  downloadWeeklyPatrolCsv,
+} from "@/lib/patrolCsvExport";
+
+const EXPORT_ROWS = [
+  {
+    key: "daily" as const,
+    label: "Daily patrol (today)",
+    hint: "Calendar day · CSV",
+  },
+  {
+    key: "weekly" as const,
+    label: "Weekly patrol (last 7 days)",
+    hint: "Rolling window · CSV",
+  },
+  {
+    key: "missed" as const,
+    label: "Missed checkpoints (last 90 days)",
+    hint: "Status = Missed · CSV",
+  },
+];
+
+export default function HowItWorksSection() {
+  const [downloading, setDownloading] = useState<
+    null | "daily" | "weekly" | "missed"
+  >(null);
+
+  async function handleExport(kind: "daily" | "weekly" | "missed") {
+    setDownloading(kind);
+    try {
+      const result =
+        kind === "daily"
+          ? await downloadDailyPatrolCsv()
+          : kind === "weekly"
+            ? await downloadWeeklyPatrolCsv()
+            : await downloadMissedPatrolCsv();
+      if (!result.ok) {
+        window.alert(result.error ?? "Could not generate CSV. Check Supabase env and table.");
+      }
+    } finally {
+      setDownloading(null);
+    }
+  }
+ fcfde94 (update website)
 
   return (
     <section id="how-it-works">
@@ -168,18 +219,18 @@ export default function HowItWorksSection() {
           <>
             Export Full Patrol Data
             <br />
-            to Excel & CSV Reports
+            to CSV Reports
           </>
         }
         description={
           <>
-            Every patrol event can be stored and exported with guard ID, checkpoint,
-            timestamp, BLE device ID, and verification status. Download daily or weekly
-            reports in Excel or CSV for audits, management reviews, and compliance records.
+            Every patrol event can be exported with guard ID, checkpoint, timestamps,
+            device ID, BLE MAC, RSSI, and status. Download daily, weekly, or missed
+            reports as CSV for audits and compliance.
           </>
         }
         primaryContent={
-          <div className="h-full rounded-2xl border border-white/10 bg-[#0f1320] p-4 md:p-5">
+          <div className="relative z-10 h-full rounded-2xl border border-white/10 bg-[#0f1320] p-4 md:p-5">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="h-4 w-4 text-[#2b7fff]" />
@@ -188,16 +239,28 @@ export default function HowItWorksSection() {
               <span className="text-xs text-neutral-400">Ready</span>
             </div>
             <div className="mt-4 grid grid-cols-1 gap-3">
-              {[
-                "Daily Patrol Summary - 2026-05-08.xlsx",
-                "Weekly Compliance Report - Week 18.csv",
-                "Missed Checkpoint Alerts - 2026-05.xlsx",
-              ].map((file) => (
-                <div key={file} className="flex items-center justify-between rounded-xl border border-white/5 bg-black/30 px-3 py-2">
-                  <p className="text-xs text-neutral-300">{file}</p>
-                  <button className="inline-flex items-center gap-1 rounded-lg bg-[#2b7fff]/15 px-2 py-1 text-[10px] font-medium text-[#2b7fff]">
-                    <Download className="h-3 w-3" />
-                    Download
+              {EXPORT_ROWS.map((row) => (
+                <div
+                  key={row.key}
+                  className="flex flex-col gap-2 rounded-xl border border-white/5 bg-black/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-xs font-medium text-white">{row.label}</p>
+                    <p className="text-[10px] text-neutral-500">{row.hint}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={downloading !== null}
+                    aria-busy={downloading === row.key}
+                    onClick={() => void handleExport(row.key)}
+                    className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg bg-[#2b7fff]/15 px-3 py-1.5 text-[10px] font-medium text-[#2b7fff] transition-colors hover:bg-[#2b7fff]/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {downloading === row.key ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="h-3 w-3" />
+                    )}
+                    {downloading === row.key ? "Preparing…" : "Download CSV"}
                   </button>
                 </div>
               ))}
@@ -217,7 +280,8 @@ export default function HowItWorksSection() {
                   "Time",
                   "Device ID",
                   "Status",
-                  "Shift",
+                  "MAC Address",
+                  "RSSI",
                 ].map((col) => (
                   <div key={col} className="rounded-md border border-white/5 bg-[#111827] px-2 py-1.5">
                     {col}
