@@ -1,15 +1,19 @@
 'use client';
 
- HEAD
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import SectionWithMockup from "@/components/blocks/section-with-mockup";
-import { FileSpreadsheet, Download, Activity, ShieldCheck } from "lucide-react";
+import { FileSpreadsheet, Download, Activity, ShieldCheck, Loader2 } from "lucide-react";
 import { usePatrolEvents } from '@/hooks/use-patrol-events';
 import {
   computeZoneScansFromLogs,
   DEMO_PATROL_TABLE,
   resolveZoneRowsForDisplay,
 } from '@/lib/patrol-stats';
+import {
+  downloadDailyPatrolCsv,
+  downloadMissedPatrolCsv,
+  downloadWeeklyPatrolCsv,
+} from "@/lib/patrolCsvExport";
 
 export default function HowItWorksSection() {
   const { events: live } = usePatrolEvents({ limit: 150, intervalMs: 4000 });
@@ -26,15 +30,6 @@ export default function HowItWorksSection() {
 
   const zoneSubtitle =
     live.length > 0 ? 'From your live patrol feed (last 60 min when available)' : 'From demo patrol activity';
-
-import React, { useState } from 'react';
-import SectionWithMockup from "@/components/blocks/section-with-mockup";
-import { FileSpreadsheet, Download, Activity, ShieldCheck, Loader2 } from "lucide-react";
-import {
-  downloadDailyPatrolCsv,
-  downloadMissedPatrolCsv,
-  downloadWeeklyPatrolCsv,
-} from "@/lib/patrolCsvExport";
 
 const EXPORT_ROWS = [
   {
