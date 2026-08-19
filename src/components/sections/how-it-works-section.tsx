@@ -75,7 +75,7 @@ export default function HowItWorksSection() {
       setDownloading(null);
     }
   }
- fcfde94 (update website)
+
 
   return (
     <section id="how-it-works">
