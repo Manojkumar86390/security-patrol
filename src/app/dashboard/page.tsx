@@ -16,7 +16,7 @@ import {
   Search, Bell, ChevronDown, Menu, X
 
   Search, Bell, Menu, Download, Loader2
- fcfde94 (update website)
+
 } from 'lucide-react';
 
 interface PatrolLog {
